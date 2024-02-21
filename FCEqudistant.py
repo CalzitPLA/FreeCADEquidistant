@@ -12,10 +12,10 @@ import FreeCADGui
 coord =[]
 vertex_coordinates = []
 p1=[]
+equi_obj =[]
 equi_list_sorted=[]
 equi_list_sorted2=[]
 vecs=[]
-
 
 def run(selection_obj):
     pts=[]
@@ -25,7 +25,7 @@ def run(selection_obj):
             pts += ws.discretize(10)
             print(pts)
             #equi_list_sorted2.append((pts[0],ws[1],ws[2]))
-    Draft.makeWire(pts)
+    Draft.makeWire(pts, closed = True)
     #print(equi_list_sorted2)
     for obj in pts:
       vecs.append(obj)
@@ -52,7 +52,7 @@ def Equidistante(unique_list_inp,path):
   xy2 = np.asarray(unique_list_tripple[1])
   xy3 = np.asarray(unique_list_tripple[2])
   equi_list = []
-  equid = 2 ## mm
+  equid = 3 ## mm
 #### Berechnen über Parallelogram
   
            #################
@@ -76,18 +76,45 @@ def Equidistante(unique_list_inp,path):
   print(betrag_v21)
   cos_alpha_213 = dot_v / (np.absolute(betrag_v23) * np.absolute(betrag_v21))
   print(cos_alpha_213)
-  alpha_213 = np.arccos(cos_alpha_213)/math.pi*180
+  alpha_213 = np.arccos(round(cos_alpha_213, 6))/math.pi*180
   beta_213  = 180 - alpha_213
   print(beta_213)
   print("beta")
   print(alpha_213)
   print("alpha")
-  a_para = equid / np.sin(beta_213/180 * (math.pi/2))
-  a_para_check = 0.1 / np.sin(beta_213/180 * (math.pi/2))
+  ## error handling
+  multiplic = 1
+  if beta_213 == 0:
+    #v21_reshaped = v21.reshape(-1, 1)
+    #x = gramschmidt(v21_reshaped)
+    v21 = np.asarray([v21[1], (-1) * v21[0] , 0. ])
+    v23 = np.asarray([(-1) * v23[1],  v23[0] , 0. ])
+    a_para = v21[1] * equid 
+    a_para_check = v21[1] * equid * 0.1
+    b_para = v21[0] * equid 
+    b_para_check = v21[0] * equid * 0.1
+    multiplic = (-1)
+
+    print("beta zero")
+  else:
+   a_para = equid / np.sin(beta_213/180 * (math.pi/2))
+   a_para_check = 0.1 / np.sin(beta_213/180 * (math.pi/2))
   print(a_para)
   print("a_para")
-  b_para = equid / np.sin(alpha_213/math.pi/2)
-  b_para_check = 0.1 / np.sin(alpha_213/180 * (math.pi/2))
+  if alpha_213 == 0:
+    #x = gramschmidt(v21)
+    multiplic = (-1)
+    v21 = np.asarray([v21[1], (-1) * v21[0] , 0. ])
+    v23 = np.asarray([(-1) *v23[1],  v23[0] , 0. ])
+    a_para = v21[1] * equid
+    a_para_check = v21[1] * equid * 0.1
+    b_para = v21[0] * equid 
+    b_para_check = v21[0] * equid * 0.1
+
+    print("alpha zero")
+  else:
+   b_para = equid / np.sin(alpha_213/math.pi/2)
+   b_para_check = 0.1 / np.sin(alpha_213/180 * (math.pi/2))
   print(b_para)
   print("b_para")
   a_vers= v21 / np.linalg.norm(v21) * np.absolute(a_para)
@@ -99,15 +126,16 @@ def Equidistante(unique_list_inp,path):
   print("b")
   print(b_vers)
   print(np.linalg.norm(a_vers))
-  p_equi = xy2 + a_vers + b_vers
+  #p_equi = xy2 + a_vers + b_vers
   p_equi_check = xy2 + a_vers_check + b_vers_check
-  print((p_equi[0],p_equi[1]))
+  #print((p_equi[0],p_equi[1]))
   if insidecheck2([[p_equi_check[0],p_equi_check[1]]], path) == False:
     a_vers= -1 * a_vers
     b_vers= -1 * b_vers
     p_equi = xy2 + a_vers + b_vers
-  if equid < 0:
-    p_equi = xy2 - a_vers - b_vers
+  ab_vers = a_vers + b_vers
+  ab_vers/= np.linalg.norm(ab_vers)
+  p_equi = xy2 + ab_vers * equid
   return p_equi
 
 #Wire aus Punktdatensatz erstellen
@@ -155,71 +183,23 @@ def calculate_bounding_box(path):
 def unique_coordinates (polygon3):
  for obj in polygon3:
   coord.append((obj.StartPoint.x, obj.StartPoint.y))
- ### get unique coordinates
-# Endpointx = []
-# Endpointy = []
-# Startpointx =[]
-# Startpointy = []
-# coord_leftover2 = [] 
-# coord_leftover = []
-# coord = []
-# for obj in polygon3:
-#  Endpointx = obj.StartPoint.x
-#  Endpointy = obj.StartPoint.y
-#  count= 0
-#  break
-# for obj in polygon3:
-#  count+=1
-#  coord_leftover2.append((obj.StartPoint.x, obj.StartPoint.y, obj.EndPoint.x , obj.EndPoint.y))
-#  if count == 100000:
-#   break
-# count1= 0
-# for objo in coord_leftover2:
-#  count1+=1
-#  if count1 == 100000:
-#   break
-#  # Schleife um Punkte aneinanderzureihen
-#  # Bedingung Startpunkt_neu == Endpunkt_alt
-#  # coord_leftover2 dient als Überlauf
-#  count2= 0
-#  for obj1 in coord_leftover2:
-#   count2+=1
-#   if count2 == 100000:
-#    break
-#   #Punkt hinzufügen, wenn nicht vorhanden
-#   if obj1[0] == Endpointx and obj1[1] == Endpointy:
-#          coord.append((obj1[0], obj1[1]))
-#          Endpointx = obj1[2]
-#          Endpointy = obj1[3]
-#   #Aussortieren ob Punkt gedoppelt oder logisch nicht angehangen werden kann.  
-#   else:
-#          d = 0
-#          for obj2 in coord:
-#            if obj1[0]  == obj2[0] and obj1[1]  == obj2[1]:
-#             d = 1
-#          if d == 0:
-#           coord_leftover.append((obj1[0], obj1[0])) 
-#  coord_leftover2 = coord_leftover          
-#  if len(coord_leftover) == 0:
-#    break
  return coord
 
 ##### Hauptscripte ######   
 Gui.activeDocument().activeView().viewTop()
-doc = App.ActiveDocument 
-selection_object2 = FreeCADGui.Selection.getSelection()[0]
+doc = App.ActiveDocument
+
+start_point = FreeCADGui.Selection.getSelection()[0] 
+selection_object2 = FreeCADGui.Selection.getSelection()[1]
+base=[]
+print(base)
 pts=run(selection_object2)
-#sk = Draft.make_sketch(pts, autoconstraints=True)
 shape2 = selection_object2.Shape
 bbox2 = shape2.BoundBox
 center2 = bbox2.Center
 translation2 = FreeCAD.Vector(-center2.x, -center2.y, -bbox2.ZMin)
 selection_object2.Placement.Base = selection_object2.Placement.Base.add(translation2)
 sketch = Draft.make_sketch(selection_object2, autoconstraints=True)
-FreeCADGui.Selection.clearSelection()
-FreeCADGui.Selection.addSelection('Rectangle_tester','Shape001')
-#FreeCADGui.runCommand('Draft_Draft2Sketch',0)
-selection_object2 = FreeCADGui.Selection.getSelection()[0]
 sk = Draft.make_sketch(selection_object2, autoconstraints=False)
 polygon = doc.Sketch001.Geometry
 polygon2 = polygon
@@ -230,7 +210,6 @@ polygon = np.asmatrix(unique_list)
 points = np.random.rand(100, 2)
 path = Path(polygon)
 path2 = Path(polygon)
-equi_obj =[]
 i=0
 while i < point_count-2:
  print(i) 
@@ -239,7 +218,33 @@ while i < point_count-2:
  print(Equidistante((unique_list[i],unique_list[i+1],unique_list[i+2]),path))
  equi_obj.append(Equidistante((unique_list[i],unique_list[i+1],unique_list[i+2]),path).tolist())
  i = i+1
-equi_obj.append(Equidistante((unique_list[i],unique_list[i+1],unique_list[0]),path).tolist())
-i = i+1
-equi_obj.append(Equidistante((unique_list[i],unique_list[0],unique_list[1]),path).tolist())
+print(equi_obj)
 wire = equi_list_sorted2f(equi_obj)
+point_list=[]
+doc = App.ActiveDocument 
+p2 = App.Vector(1000, 500, 0)
+Gui.Selection.clearSelection()
+Gui.Selection.addSelection('Intersection_tester','Shape001')
+base = FreeCADGui.Selection.getSelection()[0]
+print(start_point.Placement.Base)
+bbox = base.Shape.BoundBox
+i=0
+while i < 361:
+ x_a = (np.cos(i/180*math.pi)*bbox.DiagonalLength*2)
+ y_a = (np.sin(i/180*math.pi)*bbox.DiagonalLength*2)
+ p2 = App.Vector(x_a,y_a, 0)
+ tool = Draft.make_line(start_point.Placement.Base, p2)
+ print(f"Tool TypeId: {tool.TypeId}")
+ print(f"Base TypeId: {base.TypeId}")
+ FreeCAD.ActiveDocument.recompute()
+ dist, points, geom = base.Shape.distToShape(tool.Shape)
+ print(f"Dist: {dist}")
+ print(f"Points: {points}")
+ print(points[0][0])
+ point_list.append(points[0][0])
+ print(f"Geom: {geom}")
+ i += 1
+
+print(point_list)
+spline1 = Draft.make_bspline(point_list, closed=False)
+doc.recompute()
