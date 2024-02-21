@@ -1,7 +1,9 @@
 # FreeCADEquidistant
 A macro for calculating an equidistant out of an existing wire e.g. a svg-image.
 BSplines are readable.
-The result is build out of 1D-lines.
+The result is build out of 1D-lines and a bsplie.
+Various constructionlines are displayed.
+You could delete them if you want to.
 
 Change 1:
 
