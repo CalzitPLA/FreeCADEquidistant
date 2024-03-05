@@ -14,3 +14,5 @@ Change 1:
     Start the Script
 
     The Script calculates the wire-equidistant, and then samples points on it around the selected point. At least it creates a b-spline based on the sampled points.
+    
+![Bildschirmfoto vom 2024-03-05 15-01-04](https://github.com/CalzitPLA/FreeCADEquidistant/assets/118506426/aa43f875-97f3-4633-a647-ffea73e29aa2)
